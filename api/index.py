@@ -1,24 +1,24 @@
 import pandas as pd
 import io
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware  # Ensure this import is here
 from pydantic import BaseModel, Field
 from typing import List
 
 # Initialize the FastAPI app
 app = FastAPI()
 
-# Enable CORS to allow requests from any origin
+# --- FIX: ADD THIS CORS MIDDLEWARE BLOCK ---
+# This block must be right after app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allows all domains to make requests
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
 # --- Data Loading Section ---
-# The JSON data is embedded as a string to work in Vercel's serverless environment.
 json_data_string = """
 [
   { "region": "apac", "service": "catalog", "latency_ms": 119.71, "uptime_pct": 98.726, "timestamp": 20250301 },
@@ -59,28 +59,19 @@ json_data_string = """
   { "region": "amer", "service": "catalog", "latency_ms": 211.24, "uptime_pct": 97.827, "timestamp": 20250312 }
 ]
 """
-
-# Load the string data into a pandas DataFrame
 try:
     df = pd.read_json(io.StringIO(json_data_string))
 except Exception as e:
     df = pd.DataFrame()
 
-# Pydantic model to define the structure of the request body
 class LatencyQuery(BaseModel):
     regions: List[str]
     threshold_ms: int = Field(..., gt=0)
 
-
-# --- API Endpoints ---
-
-# **FIX**: This new GET endpoint handles visits to the main URL (e.g., from a browser)
 @app.get("/")
 def read_root():
     return {"message": "API is running. Please POST to the /api/metrics endpoint to get data."}
 
-
-# This is your main POST endpoint for processing data
 @app.post("/api/metrics")
 async def get_latency_metrics(query: LatencyQuery):
     results = {}
@@ -93,7 +84,6 @@ async def get_latency_metrics(query: LatencyQuery):
         if region_df.empty:
             continue
 
-        # Calculate metrics using pandas
         avg_latency = region_df['latency_ms'].mean()
         p95_latency = region_df['latency_ms'].quantile(0.95)
         avg_uptime = region_df['uptime_pct'].mean()
