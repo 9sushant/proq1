@@ -70,7 +70,11 @@ except Exception as e:
 class LatencyQuery(BaseModel):
     regions: List[str]
     threshold_ms: int = Field(..., gt=0)
+# Add this to your api/index.py file
 
+@app.get("/")
+def read_root():
+    return {"message": "API is running. POST to /api/metrics to get data."}
 # Define the main POST endpoint
 @app.post("/api/metrics")
 async def get_latency_metrics(query: LatencyQuery):
