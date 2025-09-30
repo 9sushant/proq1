@@ -72,7 +72,7 @@ class LatencyQuery(BaseModel):
 def read_root():
     return {"message": "API is running. Please POST to the /api/metrics endpoint to get data."}
 
-@app.post("/api/metrics")
+@app.post("/api/latency")
 async def get_latency_metrics(query: LatencyQuery):
     results = {}
     if df.empty:
